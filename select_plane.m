@@ -2,7 +2,7 @@
 %   taodu@stanford.edu
 %   May 30, 2014
 
-%   pick a plane from the color image and depth image
+%   pick a plane from the depth image
 %   input: depth image, fc, cc, kc, alpha_c
 %   output: the plane equation: n*x+d=0
 function [ n, d ] = select_plane( depth, fc, cc, kc, alpha_c)
