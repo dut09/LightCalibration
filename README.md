@@ -17,6 +17,8 @@ Here I will use the stereo calibration results from the project [RGBDCameraCalib
 The next step is to understand the raw image. Robert Summer has an extremely useful [document](http://users.soe.ucsc.edu/~rcsumner/rawguide/index.html) about this. In principle, please follow this document, convert your raw images to dng images, use matlab or dcraw to decode them. We modified his matlab code and wrapped it into a function read\_dng. It will return a height by width by 3 matrix within [0, 1] range after demosaicing. The data should be linear with the actual radiance.
 
 The by-product of this project is that we have a couple of test scripts to help make sure the data in the raw image is really what we want. The first test is to decide the bayer type of the raw image. Please find red, blue and green objects, take a raw image bayer_test.dng, put it under the folder /Raw, and run test\_bayer\_type, this will produce four images by using all the four possible bayer types: gbrg, grbg, bggr, rggb. You can decide which is the really correct bayer type. As raw images are usually very large, no raw image samples will be provided. Feel free to contact <taodu@stanford.edu> if you cannot run the relevant script!
+
+test\_stability is another test we provide in the matlab code. You can use this to decide whether the DSLR sensors provide stable results. Specifically, take three (or more) photos under same settings, put the dng images in the folder \Raw, and this script will compare them and show the absolute/relative differences.
  
 ### acknowledgment and reference ###
 
