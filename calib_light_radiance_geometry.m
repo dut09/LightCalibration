@@ -13,7 +13,7 @@ function [ angle, z_dist, radiance ] ...
     light_pos, light_dir, normals )
 
     [height, width, ~] = size(image);
-    %   builda a light dir matrix for future use
+    %   build a light dir matrix for future use
     DIR(:, :, 1) = ones(height, width) .* light_dir(1);
     DIR(:, :, 2) = ones(height, width) .* light_dir(2);
     DIR(:, :, 3) = ones(height, width) .* light_dir(3);

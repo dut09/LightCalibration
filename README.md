@@ -1,6 +1,6 @@
 ## LightCalibration ##
 
-In this project we will try to build a parametric light model for a point LED light: given a 3d position in the space, the light model will return its radiance based on the distance and angle to the point light.
+In this project we will try to build a non-parametric light model for a point LED light: given a 3d position in the space, the light model will return its radiance based on the distance and angle to the point light.
 
 ### settings ###
 

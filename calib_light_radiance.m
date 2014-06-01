@@ -6,6 +6,25 @@
 %   take depth/color/color images of a white, diffuse board, put them under
 %   the folder /Radiance
 
+%   the output of the script is a non-parametric light model, for each
+%   point p in the space, we use two parameters to describe its position:
+%       angle: the angle between light_dir and p - light_pos
+%       z_dist: the projected length in light_dir, i.e., norm(p -
+%       light_pos) * cos(angle);
+%   the light model includes:
+%       light_pos: the light position in the DSLR camera t
+%       light_dir: a unit vector, the light direction in the DSLR camear
+%       frame
+%       min_angle/max_angle: the minimum/maximum angle in the light model
+%       n_bin_angle: the number of bins in angle
+%       angle_step: (max_angle - min_angle) / n_bin_angle
+%       min_z_dist/max_z_dist: minimum/maximum z_dist in the light model
+%       n_bin_z_dist: the number of bins in z_dist
+%       z_dist_step: (max_z_dist - min_z_dist) / n_bin_z_dist
+%       radiance: a n_bin_angle by n_bin_z_dist by 3 matrix.
+%   given a 3d point p in the camera frame, we will compute its angle and
+%   z_dist, then do bilinear interpolation in radiance. the function
+%   comp_light_radiance wraps this procedure
 
 %%  setting
 %   bayer type
@@ -119,7 +138,55 @@ save('light_radiance_sample.mat', ...
     'min_z_dist', 'max_z_dist', 'n_bin_z_dist', ...
     'angle_step', 'z_dist_step', ...
     'angle_samples', 'z_dist_samples');
+
+%   free the memory
+clear angle angle_id count image invalid_id mask normals radiance ...
+    z_dist z_dist_id;
 %%  fit the model
 %   now that we have gathered all the samples, we clamp them, and fit them
 %   by the power law
 load('light_radiance_sample.mat');
+%   fit the data
+smooth_radiance_samples = radiance_samples;
+smooth_radiance_samples(:) = 0;
+%   divide z_dist_sample by 1000 so that they are comparable
+%   collect fit data
+sse = zeros(n_bin_angle, 3);
+rsquare = zeros(n_bin_angle, 3);
+for channel = 1 : 3
+    disp('fitting channel = ');
+    disp(channel);
+    for angle = 1 : n_bin_angle
+        disp('fitting angle = ');
+        disp(angle);
+        Y = radiance_samples(angle, :, channel);
+        id = Y == 0;
+        Y(id) = [];
+        %   if the samples are too few, we erase them
+        if (length(Y) < n_bin_z_dist / 20)
+            radiance_samples(angle, :, channel) = 0;
+            continue;
+        end
+        X = z_dist_samples / 1000;
+        X(id) = [];
+        [func, error] = fit_power_function(X, Y);
+        smooth_radiance_samples(angle, :, channel) = func(z_dist_samples / 1000);
+        sse(angle, channel) = error.sse;
+        rsquare(angle, channel) = error.rsquare;
+    end
+end
+%   show the error
+figure;plot(angle_samples, sse, '+');
+figure;plot(angle_samples, rsquare, '+');
+
+%   save the light model
+light_model.light_pos = light_pos;
+light_model.light_dir = light_dir;
+light_model.min_angle = min_angle;
+light_model.max_angle = max_angle;
+light_model.n_bin_angle = n_bin_angle;
+light_model.min_z_dist = min_z_dist;
+light_model.max_z_dist = max_z_dist;
+light_model.n_bin_z_dist = n_bin_z_dist;
+light_model.radiance = smooth_radiance_samples;
+save('light_model.mat', 'light_model');
