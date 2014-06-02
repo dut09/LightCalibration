@@ -8,19 +8,46 @@
 load('light_model.mat');
 
 %%  test 1: qualitative test: render a video
+%   nx and ny is from init
+%   nx = 4928, ny = 3264
 
-normals = pixel_to_camera_2d(ones(height, width), ...
+normals = pixel_to_camera_2d(ones(ny, nx), ...
     fc_right, cc_right, kc_right, alpha_c_right);
 %   assume we are moving to a wall
 wall_normal = [1; 0; -0.2];
 wall_normal = wall_normal / norm(wall_normal);
 start_point = [0; 0; 600];
 frame_num = 40;
-speed = 20;
-for frame = 1 : frame_num
-    
-end
+speed = [0; 0; 20];
 
+%   open up a video object
+video_obj = VideoWriter('light_model.avi');
+open(video_obj);
+
+video_height = 480;
+video_width = 640;
+for frame_id = 1 : frame_num
+    %   compute each single frame
+    point = start_point + frame_id * speed;
+    %   the plane equation
+    %   wall_normal * (x - point) = 0;
+    %   n = wall_normal, d = wall_normal * -point;
+    d = -wall_normal' * point;
+    [angle, z_dist, radiance] = calib_light_radiance_geometry(...
+        ones(ny, nx, 3), wall_normal, d, light_model.light_pos, ...
+        light_model.light_dir, normals);
+    %   compute the cosine factor
+    cosine = 1 ./ radiance;
+    %   get the light radiance
+    radiance = interp_light_radiance(light_model, angle(:), z_dist(:));
+    frame = reshape(radiance', height, width, 3);
+    %   resize the frame
+    frame = imresize(frame, [video_height, video_width]);
+    frame = uint8(frame * 255);
+    writeVideo(video_obj, frame);
+end
+% Close the file.
+close(video_obj);
 
 %%  test 2: quantitative test: compute the albedo of the calibration board
 
