@@ -7,7 +7,7 @@
 %   the light info [light_pos light_dir] and the normal matrix from the
 %   DSLR camera
 %   the output will be the angle between light vector and the light_dir
-%   the z_dist, and radiance in three channels
+%   the z_dist,  and radiance in three channels
 function [ angle, z_dist, radiance ] ...
     = calib_light_radiance_geometry( image, n, d, ...
     light_pos, light_dir, normals )
@@ -28,8 +28,8 @@ function [ angle, z_dist, radiance ] ...
     %   intersection points
     light_vector = zeros(height, width, 3);
     for channel = 1 : 3
-        light_vector(:, :, channel) ...
-            = normals(:, :, channel) .* t - light_pos(channel);
+        light_vector(:, :, channel) = normals(:, :, channel) .* t ...
+            - light_pos(channel);
     end    
     len = sqrt(sum(light_vector.^2, 3));
     %   compute the cosine for each light vector and the light dir

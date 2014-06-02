@@ -9,6 +9,17 @@ load('light_model.mat');
 
 %%  test 1: qualitative test: render a video
 
+normals = pixel_to_camera_2d(ones(height, width), ...
+    fc_right, cc_right, kc_right, alpha_c_right);
+%   assume we are moving to a wall
+wall_normal = [1; 0; -0.2];
+wall_normal = wall_normal / norm(wall_normal);
+start_point = [0; 0; 600];
+frame_num = 40;
+speed = 20;
+for frame = 1 : frame_num
+    
+end
 
 
 %%  test 2: quantitative test: compute the albedo of the calibration board
@@ -47,5 +58,9 @@ radiance = reshape(radiance', height, width, 3);
 imtool(radiance);
 %   compute the difference
 imtool(abs(radiance_ref - radiance));
+%   compute the 'albedo' of the gray board
+%   in the best case, it should be exactly 1
+rho = radiance_ref ./ radiance;
+imtool(rho);
 
 
