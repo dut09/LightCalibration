@@ -4,7 +4,13 @@
 
 %   calibrate the light position
 %   put depth, color, color images in /Position
-
+option = input('would you like to manually input light info?([] = yes)', 's');
+if isempty(option)
+    light_pos = input('light_pos = (column vector)');
+    light_dir = input('light dir = (column vector)');
+    save('light_info.mat', 'light_pos', 'light_dir');
+    return;
+end
 num = numel(dir('Position\*.png'));
 center = [];
 for i = 1 : num
