@@ -9,16 +9,15 @@ load('light_model.mat');
 
 %%  test 1: qualitative test: render a video
 %   nx and ny is from init
-%   nx = 4928, ny = 3264
 
 normals = pixel_to_camera_2d(ones(ny, nx), ...
     fc_right, cc_right, kc_right, alpha_c_right);
 %   assume we are moving to a wall
-wall_normal = [1; 0; -0.2];
+wall_normal = [0; 0; -1];
 wall_normal = wall_normal / norm(wall_normal);
 start_point = [0; 0; 600];
 frame_num = 40;
-speed = [0; 0; 20];
+speed = [0; 0; 10];
 
 %   open up a video object
 video_obj = VideoWriter('light_model.avi');
@@ -27,6 +26,8 @@ open(video_obj);
 video_height = 480;
 video_width = 640;
 for frame_id = 1 : frame_num
+    disp('rendering frame: ');
+    disp(frame_id);
     %   compute each single frame
     point = start_point + frame_id * speed;
     %   the plane equation
@@ -51,10 +52,11 @@ close(video_obj);
 
 %%  test 2: quantitative test: compute the albedo of the calibration board
 
-bayer_type = 'rggb';
+bayer_type = 'gbrg';
+resize_ratio = 0.25;
 %   use depth_0001.png to test
 %   read the depth image
-depth = imread('Radiance\depth_0001.png');
+depth = imread('Radiance\depth_0002.png');
 %   fit the plane equation
 [n, d] = select_plane(depth, ...
     fc_left, cc_left, kc_left, alpha_c_left);
@@ -68,7 +70,8 @@ d = -n' * p;    %   the new plane: n' * (X - p) = 0, or n * X - n' * p = 0;
 %   n * x + d = 0
 
 %   read the dng image
-image = read_dng('Radiance\color_0001.dng', bayer_type);
+image = read_dng('Radiance\color_0002.dng', bayer_type);
+image = imresize(image, resize_ratio);
 [height, width, ~] = size(image);
 normals = pixel_to_camera_2d(ones(height, width), ...
     fc_right, cc_right, kc_right, alpha_c_right);
@@ -88,6 +91,6 @@ imtool(abs(radiance_ref - radiance));
 %   compute the 'albedo' of the gray board
 %   in the best case, it should be exactly 1
 rho = radiance_ref ./ radiance;
-imtool(rho);
+imtool(rho/2);
 
 

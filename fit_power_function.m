@@ -30,7 +30,7 @@ opts.Upper = [1 0];
 [fitresult, gof] = fit( xData, yData, ft, opts );
 
 % Plot fit with data.
-%{
+
 figure( 'Name', 'fit_powe_function' );
 h = plot( fitresult, xData, yData );
 legend( h, 'Y vs. X', 'fit_powe_function', 'Location', 'NorthEast' );
@@ -38,5 +38,5 @@ legend( h, 'Y vs. X', 'fit_powe_function', 'Location', 'NorthEast' );
 xlabel( 'X' );
 ylabel( 'Y' );
 grid on
-%}
+
 

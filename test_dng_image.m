@@ -9,7 +9,9 @@
 %%  bayer test
 %   test the bayer type of the dng image
 %   please put bayer_test.dng under the folder /Raw
-%   it seems dng uses rggb as its bayer type
+%   some bayer types:
+%   Nikon D7000:        rggb
+%   Nokia Lumia 1520:   gbrg
 
 %   gbrg
 image = read_dng('Raw/bayer_test.dng', 'gbrg');
@@ -33,15 +35,28 @@ figure('name', 'rggb'); imshow((image).^(1/2.2));
 %   for a combination of iso/shutter speed/aperture, take a photo of the
 %   gray board, use comp_radiance_hist to see the distribution of the
 %   sensor data. In principle, if it uniformly distributes in [0, 1], then
-%   this setting is good. If the data are too dark(clustered in [0, 0.3], 
+%   this setting is good. If the data are too dark(clustered in [0, 0.3],
 %   for example), then the noise will greatly affect the percision of the
 %   data; on the other hand, if too many pixels are overexposured, we may
 %   loss too much information.
 %   
 %   put rad_hist_test.dng under /Raw, then run the following line:
 
-bayer_type = 'rggb';
-comp_radiance_hist(read_dng('Raw\rad_hist_test.dng', bayer_type));
+bayer_type = 'gbrg';
+image = read_dng('Raw\rad_hist_test.dng', bayer_type);
+[height, width, ~] = size(image);
+figure;imshow(image);
+pixels = ginput();
+%   get the polygon
+pixels = [pixels; pixels(1, :)];
+[X, Y] = meshgrid(1:width, 1:height);
+XV = pixels(:,1);
+YV = pixels(:,2);
+mask = inpolygon(X, Y, XV, YV);
+for channel = 1 : 3
+    image(:, :, channel) = image(:, :, channel).*mask;
+end
+comp_radiance_hist(image);
 
 %%  black test
 %   you will probably do this test multiple times
@@ -53,7 +68,7 @@ comp_radiance_hist(read_dng('Raw\rad_hist_test.dng', bayer_type));
 %   room, name it as black_test.dng, and analyse its histogram. If they are
 %   close to zero, then you can assure the enviromnent ligth won't affect
 %   the results (at least obviously) when the point light is turned on.
-bayer_type = 'rggb';
+bayer_type = 'gbrg';
 comp_radiance_hist(read_dng('Raw\black_test.dng', bayer_type));
 
 %%  stability test
@@ -66,7 +81,7 @@ comp_radiance_hist(read_dng('Raw\black_test.dng', bayer_type));
 
 %   change the number here if you want to use more/less images to test
 image_num = 3;
-bayer_type = 'rggb';
+bayer_type = 'gbrg';
 
 image = read_dng('Raw\stable_test_1.dng', bayer_type);
 for i = 2 : image_num

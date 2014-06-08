@@ -28,15 +28,16 @@
 
 %%  setting
 %   bayer type
-bayer_type = 'rggb';
+bayer_type = 'gbrg';
+resize_ratio = 0.25;
 %   configuration of the clampped bin in angle and theta
 %   change them if necessary
 min_angle = 0;
-max_angle = pi / 6;
-n_bin_angle = 50;
+max_angle = pi / 16;
+n_bin_angle = 30;
 min_z_dist = 500;
-max_z_dist = 2000;
-n_bin_z_dist = 100;
+max_z_dist = 1000;
+n_bin_z_dist = 50;
 
 %   build angle sample and z sample
 angle_step = (max_angle - min_angle) / n_bin_angle;
@@ -50,7 +51,9 @@ radiance_samples_count = zeros(n_bin_angle, n_bin_z_dist);
 %   get the number of the images
 img_num = numel(dir('Radiance\*.png'));
 %   get the height and the width of the dng image
-[height, width, ~] = size(read_dng('Radiance\color_0001.dng', bayer_type));
+image = read_dng('Radiance\color_0001.dng', bayer_type);
+image = imresize(image, resize_ratio);
+[height, width, ~] = size(image);
 %   precompute the normal pixel vectors in DSLR camera frame
 normals = pixel_to_camera_2d(ones(height, width), ...
     fc_right, cc_right, kc_right, alpha_c_right);
@@ -77,6 +80,7 @@ for i = 1 : img_num
     
     %   read the dng image
     image = read_dng(['Radiance\color_', num_suffix, '.dng'], bayer_type);
+    image = imresize(image, resize_ratio);
     imshow(image.^(1/2.2)); %   show the image
     pixels = ginput();  %   select the valid region of the image
     close all;
@@ -85,6 +89,8 @@ for i = 1 : img_num
     XV = pixels(:,1);
     YV = pixels(:,2);
     mask = inpolygon(X, Y, XV, YV); %   get the mask
+    %   filter out overexposure regions
+    mask = mask & image(:,:,1) < 1 & image(:,:,2) < 1 & image(:,:,3) < 1;
     
     [ angle, z_dist, radiance ] = calib_light_radiance_geometry( image, n, d, ...
         light_pos, light_dir, normals );
@@ -147,37 +153,25 @@ clear angle angle_id count image invalid_id mask normals radiance ...
 %   by the power law
 load('light_radiance_sample.mat');
 %   fit the data
-smooth_radiance_samples = radiance_samples;
-smooth_radiance_samples(:) = 0;
-%   divide z_dist_sample by 1000 so that they are comparable
-%   collect fit data
-sse = zeros(n_bin_angle, 3);
-rsquare = zeros(n_bin_angle, 3);
+X = angle_samples;
+Y = z_dist_samples / 1000;
+%   Z = a*exp(-x^2/b)*y^(c)
+%   each column represents the parameters for a channel
+paras = zeros(3, 3);
 for channel = 1 : 3
-    disp('fitting channel = ');
-    disp(channel);
-    for angle = 1 : n_bin_angle
-        disp('fitting angle = ');
-        disp(angle);
-        Y = radiance_samples(angle, :, channel);
-        id = Y == 0;
-        Y(id) = [];
-        %   if the samples are too few, we erase them
-        if (length(Y) < n_bin_z_dist / 20)
-            radiance_samples(angle, :, channel) = 0;
-            continue;
-        end
-        X = z_dist_samples / 1000;
-        X(id) = [];
-        [func, error] = fit_power_function(X, Y);
-        smooth_radiance_samples(angle, :, channel) = func(z_dist_samples / 1000);
-        sse(angle, channel) = error.sse;
-        rsquare(angle, channel) = error.rsquare;
-    end
+    Z = radiance_samples(:,:,channel);
+    W = double(Z > 0);
+    [func, stat] = fit_gauss_power_function(X, Y, Z, W);
+    a = func.a;
+    b = func.b;
+    c = func.c;
+    a = a/(1000^c);
+    paras(1, channel) = a;
+    paras(2, channel) = b;
+    paras(3, channel) = c;
+    disp('stats');
+    disp(stat);
 end
-%   show the error
-figure;plot(angle_samples, sse, '+');
-figure;plot(angle_samples, rsquare, '+');
 
 %   save the light model
 light_model.light_pos = light_pos;
@@ -188,5 +182,5 @@ light_model.n_bin_angle = n_bin_angle;
 light_model.min_z_dist = min_z_dist;
 light_model.max_z_dist = max_z_dist;
 light_model.n_bin_z_dist = n_bin_z_dist;
-light_model.radiance = smooth_radiance_samples;
+light_model.paras = paras;
 save('light_model.mat', 'light_model');

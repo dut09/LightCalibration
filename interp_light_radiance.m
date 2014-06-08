@@ -5,6 +5,24 @@
 %   the core function in comp_light_radiance
 function [ radiance ] = interp_light_radiance( light_model, angle, z_dist )
     num = length(angle);
+    radiance = zeros(3, num);
+    paras = light_model.paras;
+    for channel = 1 : 3
+        a = paras(1, channel);
+        b = paras(2, channel);
+        c = paras(3, channel);
+        radiance(channel, :) = a * exp(-angle.^2/b) .* z_dist.^c;
+    end
+    invalid_id = angle <= light_model.min_angle ...
+        | angle >= light_model.max_angle ...
+        | z_dist <= light_model.min_z_dist ...
+        | z_dist >= light_model.max_z_dist;
+    %   clear those invalid points
+    radiance(:, invalid_id) = 0;
+
+%   deprecated
+%{
+    num = length(angle);
     invalid_id = angle <= light_model.min_angle ...
         | angle >= light_model.max_angle ...
         | z_dist <= light_model.min_z_dist ...
@@ -27,5 +45,6 @@ function [ radiance ] = interp_light_radiance( light_model, angle, z_dist )
     end
     %   clear those invalid points
     radiance(:, invalid_id) = 0;
+%}
 end
 
