@@ -36,6 +36,11 @@ function [ image ] = read_dng( name, bayer_type )
     %   black level and white level in DNG
     black = meta_info.SubIFDs{1}.BlackLevel(1);
     saturation = meta_info.SubIFDs{1}.WhiteLevel;
+    disp('saturation: ');
+    disp(saturation);
+    if black ~= 0
+        disp('warning: black level is not zero!');
+    end
     lin_bayer = (raw - black)/(saturation - black);
     lin_bayer = max(0, min(lin_bayer, 1));
     clear raw
